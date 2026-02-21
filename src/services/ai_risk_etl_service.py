@@ -1,7 +1,6 @@
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from .vector_store_service import VectorStoreService
-from langchain_google_genai.embeddings import GoogleGenerativeAIEmbeddings
 from datetime import datetime
 import os
 import csv
@@ -14,7 +13,7 @@ vectorStoreService = VectorStoreService()
 def ingest_ai_risk_csv(chunk_size: int = 1000, chunk_overlap: int = 200):
     processed_docs = []
 
-    with open(AI_RISK_DATA_DIR, "r", encoding="utf-8") as csvfile:
+    with open(AI_RISK_DATA_DIR, "r", encoding="utf-8") as csvfile: 
         reader = csv.DictReader(csvfile)
         for row in reader:
             metadata = {
