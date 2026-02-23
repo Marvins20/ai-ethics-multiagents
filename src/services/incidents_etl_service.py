@@ -1,10 +1,13 @@
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from .vector_store_service import VectorStoreService
+from .incidents_reports_etl_service import get_reports_by_ids
 from langchain_google_genai.embeddings import GoogleGenerativeAIEmbeddings
 from datetime import datetime
 import os
 import csv
+import json
+import ast
 
 INCIDENTS_DATA_DIR = os.getenv("INCIDENTS_DATA_DIR", "data/raw/incidents.csv")
 
@@ -17,6 +20,23 @@ def ingest_incidents_csv(chunk_size: int = 1000, chunk_overlap: int = 200):
     with open(INCIDENTS_DATA_DIR, "r", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
+            reports_data = []
+            reports_str = row.get('reports', '')
+            if reports_str:
+                try:
+                    if reports_str.startswith('['):
+                        report_indices = ast.literal_eval(reports_str)
+                    else:
+                        report_indices = [int(r.strip()) for r in reports_str.split(',') if r.strip()]
+                    
+                    if isinstance(report_indices, (list, tuple)):
+                        # Convert 1-based CSV row number (accounting for header) to 0-based data index
+                        data_indices = [int(idx) - 2 for idx in report_indices if str(idx).isdigit()]
+                        if data_indices:
+                            reports_data = get_reports_by_ids(data_indices)
+                except Exception as e:
+                    print(f"Error parsing reports for incident {row.get('incident_id')}: {e}")
+
             metadata = {
                 'source': 'incidents.csv',
                 'ingestion_date': datetime.now().strftime('%Y-%m-%d'),
@@ -27,7 +47,8 @@ def ingest_incidents_csv(chunk_size: int = 1000, chunk_overlap: int = 200):
                 'deployer': row.get('Alleged deployer of AI system', ''),
                 'developer': row.get('Alleged developer of AI system', ''),
                 'harmed_parties': row.get('Alleged harmed or nearly harmed parties', ''),
-                'title': row.get('title', '')
+                'title': row.get('title', ''),
+                'reports': json.dumps(reports_data)
             }
 
             content_parts = []

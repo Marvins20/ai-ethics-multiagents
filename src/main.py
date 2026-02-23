@@ -6,7 +6,7 @@ load_dotenv()
 from langchain.messages import AnyMessage, SystemMessage, ToolMessage, HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from typing_extensions import TypedDict, Annotated
-from langgraph.graph import StateGraph
+from langgraph.graph import StateGraph, END
 import operator
 import os
 from .tools.rags.incidents_rag import search_incidents
@@ -19,7 +19,7 @@ llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro", temperature=0)
 
 tools = [search_incidents, search_risks]
 
-llm.bind_tools(tools)
+llm_with_tools = llm.bind_tools(tools)
 
 
 class AgentState(TypedDict):
@@ -44,7 +44,7 @@ tools_dict = {tool.name: tool for tool in tools}
 
 def call_llm(state: AgentState) -> AgentState:
     '''Call the LLM with the current state messages and return the new state with updated messages and incremented LLM call count.'''
-    new_message = llm.invoke([SystemMessage(content=system_prompt)] + state["messages"])
+    new_message = llm_with_tools.invoke([SystemMessage(content=system_prompt)] + state["messages"])
     return {"messages": state["messages"] + [new_message], "llm_calls": state["llm_calls"] + 1}
 
 def retriever_action(state: AgentState) -> AgentState:
@@ -73,9 +73,9 @@ graph.add_node("retriever", retriever_action)
 graph.add_conditional_edges(
     "llm",
     should_continue,
-    {True: "retriever", False: "llm"}
+    {True: "retriever", False: END}
 )
-
+graph.add_edge("retriever", "llm")
 graph.set_entry_point("llm")
 
 rag_agent = graph.compile()

@@ -29,6 +29,9 @@ dependencies = [
     "langgraph>=1.0.7",
     "mcp[cli]>=1.26.0",
     "deepagents>=0.4.1",
+    "unstructured[doc,docs,docx,pdf,txt]>=0.20.8",
+    "duckdb>=1.4.4",
+    "pandas>=3.0.1",
 ]
 
 [project.scripts]
