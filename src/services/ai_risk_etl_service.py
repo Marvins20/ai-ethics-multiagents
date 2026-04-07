@@ -4,6 +4,9 @@ from .vector_store_service import VectorStoreService
 from datetime import datetime
 import os
 import csv
+import logging
+
+logger = logging.getLogger(__name__)
 
 AI_RISK_DATA_DIR = os.getenv("AI_RISK_DATA_DIR", "data/raw/ai_risk_database_v3.csv")
 
@@ -11,6 +14,7 @@ vectorStoreService = VectorStoreService()
 
 
 def ingest_ai_risk_csv(chunk_size: int = 1000, chunk_overlap: int = 200):
+    logger.info("Starting AI Risk CSV ingestion from %s", AI_RISK_DATA_DIR)
     processed_docs = []
 
     with open(AI_RISK_DATA_DIR, "r", encoding="utf-8") as csvfile: 
@@ -50,8 +54,12 @@ def ingest_ai_risk_csv(chunk_size: int = 1000, chunk_overlap: int = 200):
             if page_content:
                 processed_docs.append(Document(page_content=page_content, metadata=metadata))
     
+    logger.info("Parsed %d documents from CSV", len(processed_docs))
+
     text_spliter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     split_docs = text_spliter.split_documents(processed_docs)
+    logger.info("Split into %d chunks (chunk_size=%d, overlap=%d)", len(split_docs), chunk_size, chunk_overlap)
 
     vector_db = vectorStoreService.ingest_documents(split_docs, collection_name="ai_risk_database_v3")
+    logger.info("AI Risk ingestion complete")
     return vector_db

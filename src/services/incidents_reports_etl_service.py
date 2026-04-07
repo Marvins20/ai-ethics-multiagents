@@ -67,10 +67,50 @@ def create_reports_table():
     
     return con
 
+def get_reports_by_report_numbers(report_numbers: list[int]) -> list[dict]:
+    """Fetch reports by their report_number values (the IDs stored in incidents.csv)."""
+    if not report_numbers:
+        return []
+    create_reports_table()
+    con = duckdb.connect(database=DB_PATH, read_only=True)
+    try:
+        nums_str = ",".join(map(str, report_numbers))
+        query = f"""
+            SELECT
+                report_number,
+                authors as Author,
+                date_published,
+                description,
+                image_url,
+                language,
+                source_domain,
+                title,
+                text,
+                url
+            FROM reports
+            WHERE report_number IN ({nums_str})
+        """
+        df = con.execute(query).fetchdf()
+        if df.empty:
+            return []
+        import math
+        records = df.to_dict(orient="records")
+        for record in records:
+            for k, v in record.items():
+                if isinstance(v, float) and math.isnan(v):
+                    record[k] = None
+        return records
+    except Exception as e:
+        print(f"Error retrieving reports by report_number: {e}")
+        return []
+    finally:
+        con.close()
+
+
 def get_reports_by_ids(row_ids: list[int]):
     if not row_ids:
         return []
-    
+    create_reports_table()
     con = duckdb.connect(database=DB_PATH, read_only=True)
     try:
         ids_str = ','.join(map(str, row_ids))
@@ -92,17 +132,23 @@ def get_reports_by_ids(row_ids: list[int]):
         """
         
         df = con.execute(query).fetchdf()
-        
+
         if df.empty:
             return []
 
         id_map = {row_id: i for i, row_id in enumerate(row_ids)}
         df['sort_order'] = df['rowid'].map(id_map)
         df = df.sort_values('sort_order')
-        
+
         result_df = df.drop(columns=['rowid', 'sort_order'])
-        
-        return result_df.to_dict(orient='records')
+
+        import math
+        records = result_df.to_dict(orient='records')
+        for record in records:
+            for k, v in record.items():
+                if isinstance(v, float) and math.isnan(v):
+                    record[k] = None
+        return records
         
     except Exception as e:
         print(f"Error retrieving reports: {e}")

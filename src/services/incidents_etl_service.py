@@ -1,76 +1,81 @@
-from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from .vector_store_service import VectorStoreService
-from .incidents_reports_etl_service import get_reports_by_ids
-from langchain_google_genai.embeddings import GoogleGenerativeAIEmbeddings
-from datetime import datetime
 import os
 import csv
 import json
 import ast
+import logging
+from datetime import datetime
+
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from .vector_store_service import VectorStoreService
+
+logger = logging.getLogger(__name__)
 
 INCIDENTS_DATA_DIR = os.getenv("INCIDENTS_DATA_DIR", "data/raw/incidents.csv")
 
 vectorStoreService = VectorStoreService()
 
 
-def ingest_incidents_csv(chunk_size: int = 1000, chunk_overlap: int = 200):
+def ingest_incidents_csv(
+    chunk_size: int = 1000,
+    chunk_overlap: int = 200,
+    reset: bool = False,
+):
+    logger.info("Starting Incidents CSV ingestion from %s", INCIDENTS_DATA_DIR)
     processed_docs = []
 
     with open(INCIDENTS_DATA_DIR, "r", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            reports_data = []
-            reports_str = row.get('reports', '')
+            # Parse the raw report number IDs from the CSV and store as-is
+            report_ids: list[int] = []
+            reports_str = row.get("reports", "")
             if reports_str:
                 try:
-                    if reports_str.startswith('['):
-                        report_indices = ast.literal_eval(reports_str)
+                    if reports_str.startswith("["):
+                        parsed = ast.literal_eval(reports_str)
                     else:
-                        report_indices = [int(r.strip()) for r in reports_str.split(',') if r.strip()]
-                    
-                    if isinstance(report_indices, (list, tuple)):
-                        # Convert 1-based CSV row number (accounting for header) to 0-based data index
-                        data_indices = [int(idx) - 2 for idx in report_indices if str(idx).isdigit()]
-                        if data_indices:
-                            reports_data = get_reports_by_ids(data_indices)
-                except Exception as e:
-                    print(f"Error parsing reports for incident {row.get('incident_id')}: {e}")
+                        parsed = [int(r.strip()) for r in reports_str.split(",") if r.strip()]
+                    report_ids = [int(x) for x in parsed if str(x).isdigit()]
+                except Exception as exc:
+                    logger.warning("Error parsing report IDs for incident %s: %s", row.get("incident_id"), exc)
 
             metadata = {
-                'source': 'incidents.csv',
-                'ingestion_date': datetime.now().strftime('%Y-%m-%d'),
-                'data_owner': 'AIID',
-                'id': row.get('_id', ''),
-                'incident_id': row.get('incident_id', ''),
-                'incident_date': row.get('date', ''),
-                'deployer': row.get('Alleged deployer of AI system', ''),
-                'developer': row.get('Alleged developer of AI system', ''),
-                'harmed_parties': row.get('Alleged harmed or nearly harmed parties', ''),
-                'title': row.get('title', ''),
-                'reports': json.dumps(reports_data)
+                "source": "incidents.csv",
+                "ingestion_date": datetime.now().strftime("%Y-%m-%d"),
+                "data_owner": "AIID",
+                "id": row.get("_id", ""),
+                "incident_id": row.get("incident_id", ""),
+                "incident_date": row.get("date", ""),
+                "deployer": row.get("Alleged deployer of AI system", ""),
+                "developer": row.get("Alleged developer of AI system", ""),
+                "harmed_parties": row.get("Alleged harmed or nearly harmed parties", ""),
+                "title": row.get("title", ""),
+                # Raw report_number IDs — looked up at query time via /api/v1/reports
+                "report_ids": json.dumps(report_ids),
             }
 
             content_parts = []
+            for field, label in [
+                ("title", "Title"),
+                ("description", "Description"),
+                ("Alleged deployer of AI system", "Deployer"),
+                ("Alleged developer of AI system", "Developer"),
+                ("Alleged harmed or nearly harmed parties", "Harmed Parties"),
+            ]:
+                if row.get(field):
+                    content_parts.append(f"{label}: {row[field]}")
 
-            if row.get('title'):
-                content_parts.append(f"Title: {row['title']}")
-            if row.get('description'):
-                content_parts.append(f"Description: {row['description']}")
-            if row.get('Alleged deployer of AI system'):
-                content_parts.append(f"Deployer: {row['Alleged deployer of AI system']}")
-            if row.get('Alleged developer of AI system'):
-                content_parts.append(f"Developer: {row['Alleged developer of AI system']}")
-            if row.get('Alleged harmed or nearly harmed parties'):
-                content_parts.append(f"Harmed Parties: {row['Alleged harmed or nearly harmed parties']}")
+            if content_parts:
+                processed_docs.append(Document(page_content="\n".join(content_parts), metadata=metadata))
 
-            page_content = "\n".join(content_parts)
+    logger.info("Parsed %d documents from CSV", len(processed_docs))
 
-            if page_content:
-                processed_docs.append(Document(page_content=page_content, metadata=metadata))
-    
-    text_spliter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    split_docs = text_spliter.split_documents(processed_docs)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    split_docs = text_splitter.split_documents(processed_docs)
+    logger.info("Split into %d chunks (chunk_size=%d, overlap=%d)", len(split_docs), chunk_size, chunk_overlap)
 
-    vector_db = vectorStoreService.ingest_documents(split_docs, collection_name="incidents_database")
+    vector_db = vectorStoreService.ingest_documents(split_docs, collection_name="incidents_database", reset=reset)
+    logger.info("Incidents ingestion complete")
     return vector_db

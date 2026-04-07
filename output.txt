@@ -1,0 +1,78 @@
+[nltk_data] Error loading averaged_perceptron_tagger_eng: <urlopen
+[nltk_data]     error [SSL: CERTIFICATE_VERIFY_FAILED] certificate
+[nltk_data]     verify failed: unable to get local issuer certificate
+[nltk_data]     (_ssl.c:1028)>
+[nltk_data] Error loading punkt_tab: <urlopen error [SSL:
+[nltk_data]     CERTIFICATE_VERIFY_FAILED] certificate verify failed:
+[nltk_data]     unable to get local issuer certificate (_ssl.c:1028)>
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/src/agents_graph.py", line 111, in <module>
+    running_agent()
+    ~~~~~~~~~~~~~^^
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/src/agents_graph.py", line 66, in running_agent
+    for event in events:
+                 ^^^^^^
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/.venv/lib/python3.13/site-packages/langgraph/pregel/main.py", line 2646, in stream
+    for _ in runner.tick(
+             ~~~~~~~~~~~^
+        [t for t in loop.tasks.values() if not t.writes],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        schedule_task=loop.accept_push,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/.venv/lib/python3.13/site-packages/langgraph/pregel/_runner.py", line 167, in tick
+    run_with_retry(
+    ~~~~~~~~~~~~~~^
+        t,
+        ^^
+    ...<10 lines>...
+        },
+        ^^
+    )
+    ^
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/.venv/lib/python3.13/site-packages/langgraph/pregel/_retry.py", line 42, in run_with_retry
+    return task.proc.invoke(task.input, config)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/.venv/lib/python3.13/site-packages/langgraph/_internal/_runnable.py", line 656, in invoke
+    input = context.run(step.invoke, input, config, **kwargs)
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/.venv/lib/python3.13/site-packages/langgraph/_internal/_runnable.py", line 400, in invoke
+    ret = self.func(*args, **kwargs)
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/src/agents/proprietary_framework_agent.py", line 37, in proprietary_framework_agent_call
+    framework_docs = search_framework.invoke({"query": query_summary})
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/.venv/lib/python3.13/site-packages/langchain_core/tools/base.py", line 642, in invoke
+    return self.run(tool_input, **kwargs)
+           ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/.venv/lib/python3.13/site-packages/langchain_core/tools/base.py", line 1001, in run
+    raise error_to_raise
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/.venv/lib/python3.13/site-packages/langchain_core/tools/base.py", line 967, in run
+    response = context.run(self._run, *tool_args, **tool_kwargs)
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/.venv/lib/python3.13/site-packages/langchain_core/tools/structured.py", line 97, in _run
+    return self.func(*args, **kwargs)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/src/tools/rags/framework_rag.py", line 28, in search_framework
+    return _rag_instance.query(query, top_k)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/marcusabr/Dev/ai-ethics-multiagents/src/tools/rags/framework_rag.py", line 12, in query
+    raise ValueError("Retriever not initialized")
+ValueError: Retriever not initialized
+During task with name 'proprietary_framework_agent' and id '4234eaab-b790-abb1-3e79-b30890c4dadf'
+Collection ai_risk_database_v3 already has 31620 documents. Skipping ingestion.
+Collection incidents_database already has 21315 documents. Skipping ingestion.
+Warning: No documents to ingest for collection proprietary_framework
+Collection 'proprietary_framework' is empty. Ingesting from data/raw/PL_2338-2023.pdf...
+Warning: No languages specified, defaulting to English.
+Warning: No documents to ingest for collection proprietary_framework
+Warning: Collection is empty. Returning None for retriever.
+
+ ===AI ETHICS AGENT===
+
+Using input from argument: We are developing an AI system to analyze employee emails.
+Running analysis... this may take a moment.
+Update from agent: human
+Update from agent: system
+Update from agent: system
+Update from agent: system
