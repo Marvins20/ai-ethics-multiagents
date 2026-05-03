@@ -59,6 +59,9 @@ coverage.xml
 # Jupyter Notebook
 .ipynb_checkpoints
 
+#claude
+.claude/
+
 # ChromaDB
 chroma_data/
 *.chroma

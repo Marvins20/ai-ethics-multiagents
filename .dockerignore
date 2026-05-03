@@ -1,0 +1,11 @@
+.venv
+.env
+.env.*
+__pycache__
+*.py[cod]
+data/chroma
+data/uploads
+data/duckdb
+.pytest_cache
+.ruff_cache
+*.log
