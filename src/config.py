@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     # Anthropic Claude
     claude_api_key: str = ""
 
+    # LLM provider: "anthropic" | "openai"
+    # "openai" works with any OpenAI-compatible endpoint (RunPod/vLLM, Together, etc.)
+    llm_provider: str = "anthropic"
+    llm_model: str = ""        # overrides the default model for the selected provider
+    llm_api_key: str = ""      # API key for openai-compatible provider
+    llm_base_url: str = ""     # base URL, e.g. https://<pod-id>-8000.proxy.runpod.net/v1
+
     # LangSmith (optional tracing)
     langchain_tracing_v2: bool = False
     langchain_project: str = "ai-ethics-multiagents"
