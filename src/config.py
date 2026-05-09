@@ -42,5 +42,8 @@ class Settings(BaseSettings):
     # Leave empty to disable the check (local dev).
     frontend_api_key: str = ""
 
+    # CORS allowed origins, comma-separated. "*" allows all.
+    cors_origins: str = "*"
+
 
 settings = Settings()

@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from jose import JWTError
 
 from .api.v1.router import api_router
+from .config import settings
 from .core.exceptions import jwt_exception_handler
 
 UPLOADS_DIR = Path("data/uploads")
@@ -36,9 +37,10 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    origins = [o.strip() for o in settings.cors_origins.split(",")]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["https://ai-project-compass-rho.vercel.app"],
+        allow_origins=origins,
         allow_methods=["*"],
         allow_headers=["*"],
     )
