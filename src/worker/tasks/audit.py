@@ -86,9 +86,9 @@ async def run_audit_task(
             )
             await db.commit()
 
-        await publish({"status": "completed", "result": serialized})
+        await publish({"status": "completed"})
 
-        # Auto-trigger questionnaire generation once the full audit completes
+        # Auto-trigger questionnaire
         async with AsyncSessionLocal() as db:
             audit_row = await db.execute(
                 select(AuditJob).where(AuditJob.id == uuid.UUID(job_id))

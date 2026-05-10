@@ -58,7 +58,7 @@ async def run_decompose_task(ctx: dict, job_id: str, input_text: str, thread_id:
             )
             await db.commit()
 
-        await publish({"status": "completed", "result": serialized})
+        await publish({"status": "completed"})
 
     except Exception as exc:
         error_msg = traceback.format_exc()
