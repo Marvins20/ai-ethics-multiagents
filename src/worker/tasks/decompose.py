@@ -1,6 +1,7 @@
 """ARQ task: decompose a project into actions (Phase 1)."""
 import json
 import uuid
+import traceback
 from datetime import datetime, timezone
 
 from arq import ArqRedis
@@ -60,7 +61,7 @@ async def run_decompose_task(ctx: dict, job_id: str, input_text: str, thread_id:
         await publish({"status": "completed", "result": serialized})
 
     except Exception as exc:
-        error_msg = str(exc)
+        error_msg = traceback.format_exc()
         async with AsyncSessionLocal() as db:
             await db.execute(
                 update(AuditJob)
