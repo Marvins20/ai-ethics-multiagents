@@ -23,7 +23,10 @@ async def run_decompose_task(ctx: dict, job_id: str, input_text: str, thread_id:
     channel = f"audit:{job_id}:progress"
 
     async def publish(payload: dict) -> None:
-        await redis.publish(channel, json.dumps(payload, default=str))
+        try:
+            await redis.publish(channel, json.dumps(payload, default=str))
+        except Exception:
+            pass
 
     try:
         async with AsyncSessionLocal() as db:
@@ -60,15 +63,16 @@ async def run_decompose_task(ctx: dict, job_id: str, input_text: str, thread_id:
 
         await publish({"status": "completed"})
 
-    except Exception as exc:
+    except BaseException:
         error_msg = traceback.format_exc()
-        async with AsyncSessionLocal() as db:
-            await db.execute(
-                update(AuditJob)
-                .where(AuditJob.id == uuid.UUID(job_id))
-                .values(status="failed", error_message=error_msg, completed_at=datetime.now(timezone.utc))
-            )
-            await db.commit()
-
+        try:
+            async with AsyncSessionLocal() as db:
+                await db.execute(
+                    update(AuditJob)
+                    .where(AuditJob.id == uuid.UUID(job_id))
+                    .values(status="failed", error_message=error_msg, completed_at=datetime.now(timezone.utc))
+                )
+                await db.commit()
+        except BaseException:
+            pass
         await publish({"status": "failed", "error": error_msg})
-        raise

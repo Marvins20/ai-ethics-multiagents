@@ -1,0 +1,14 @@
+fix: event in redis
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# Date:      Sun May 10 00:54:22 2026 -0300
+#
+# On branch main
+# Your branch is up to date with 'origin/main'.
+#
+# Changes to be committed:
+#	modified:   src/worker/tasks/audit.py
+#	modified:   src/worker/tasks/decompose.py
+#

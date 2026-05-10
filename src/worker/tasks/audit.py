@@ -1,6 +1,7 @@
 """ARQ task: run the full multi-agent audit pipeline (Phase 2)."""
 import json
 import uuid
+import traceback
 from datetime import datetime, timezone
 
 from arq import ArqRedis
@@ -39,7 +40,10 @@ async def run_audit_task(
     channel = f"audit:{job_id}:progress"
 
     async def publish(payload: dict) -> None:
-        await redis.publish(channel, json.dumps(payload, default=str))
+        try:
+            await redis.publish(channel, json.dumps(payload, default=str))
+        except Exception:
+            pass
 
     try:
         async with AsyncSessionLocal() as db:
@@ -110,15 +114,16 @@ async def run_audit_task(
                         "run_questionnaire_task", str(q_job.id), str(audit.project_id)
                     )
 
-    except Exception as exc:
-        error_msg = str(exc)
-        async with AsyncSessionLocal() as db:
-            await db.execute(
-                update(AuditJob)
-                .where(AuditJob.id == uuid.UUID(job_id))
-                .values(status="failed", error_message=error_msg, completed_at=datetime.now(timezone.utc))
-            )
-            await db.commit()
-
+    except BaseException:
+        error_msg = traceback.format_exc()
+        try:
+            async with AsyncSessionLocal() as db:
+                await db.execute(
+                    update(AuditJob)
+                    .where(AuditJob.id == uuid.UUID(job_id))
+                    .values(status="failed", error_message=error_msg, completed_at=datetime.now(timezone.utc))
+                )
+                await db.commit()
+        except BaseException:
+            pass
         await publish({"status": "failed", "error": error_msg})
-        raise
