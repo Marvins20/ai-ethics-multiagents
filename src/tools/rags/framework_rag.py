@@ -31,6 +31,8 @@ def reset_instance():
     """Invalidate the cached RAG instance so the next query rebuilds it with updated docs."""
     global _rag_instance
     _rag_instance = None
+    from ...services.proprietary_framework_etl_service import vectorStoreService
+    vectorStoreService._collections.pop("proprietary_framework", None)
 
 
 @tool

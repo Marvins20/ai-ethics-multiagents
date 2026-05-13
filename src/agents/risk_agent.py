@@ -52,6 +52,9 @@ system_prompt = """Você é um Agente de Análise de Riscos ÉTICOS em IA com po
     3. Ações de governança, revisão, conscientização e metodologia são quase sempre LOW.
     4. Em caso de dúvida entre dois níveis, escolha o MENOR.
     5. A maioria das ações em projetos acadêmicos deve ser LOW ou MEDIUM.
+    6. Nos campos 'risk_description' e 'analysis_summary', use SEMPRE os termos em português ao mencionar
+       classificações: "Alto" (não HIGH), "Médio" (não MEDIUM), "Baixo" (não LOW).
+       O campo 'classification' deve conter o valor em inglês (High, Medium, Low, Unknown).
 
     Para cada ação e seus resultados de busca:
     1. Primeiro avalie: este risco é ético ou operacional/técnico/de negócio?

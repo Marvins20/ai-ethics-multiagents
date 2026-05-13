@@ -1,4 +1,3 @@
-import os
 from ..tools.rags.framework_rag import search_framework
 from langchain_core.messages import SystemMessage, HumanMessage
 from ..state import (AgentState, FrameworkAnalysisResult)
@@ -34,9 +33,9 @@ system_prompt = """Você é um Agente de Análise de Frameworks de Referência e
     5. Em 'explanation': explique de forma AMIGÁVEL e DIRETA o que o documento diz sobre esse aspecto
        e o que o pesquisador deveria considerar. Escreva como orientação útil em 2-3 frases.
        Prefira "o documento recomenda", "vale atenção para", "segundo as diretrizes consultadas".
-    6. Em 'source_document': indique o nome do documento de origem consultado exatamente como aparece
-       no campo "Fonte:" de cada trecho do contexto (ex: "EU AI Act", "ISO 42001").
-       Este campo será exibido ao usuário como referência bibliográfica.
+    6. Em 'source_document': copie EXATAMENTE o nome do documento que aparece após "Fonte:" no cabeçalho
+       do trecho que originou o 'framework_reference'. A lista de nomes válidos será fornecida no início
+       da mensagem do usuário — use apenas esses nomes, sem modificar. Este campo é OBRIGATÓRIO.
 
     Se o documento não tiver informações relevantes para um aspecto, não force uma análise.
     Gere apenas itens onde o documento oferece orientação genuína.
@@ -67,16 +66,22 @@ def proprietary_framework_agent_call(state: AgentState) -> AgentState:
     framework_docs = search_framework.invoke({"query": query_in_portuguese})
 
     framework_context = ""
+    available_sources: list[str] = []
     if isinstance(framework_docs, str):
         framework_context = framework_docs
     else:
         for i, doc in enumerate(framework_docs):
-            raw_source = doc.metadata.get("source", "Unknown")
-            source_name = os.path.splitext(os.path.basename(raw_source))[0].replace("_", " ")
+            source_name = doc.metadata.get("source", "Desconhecido")
+            if source_name not in available_sources:
+                available_sources.append(source_name)
             framework_context += f"[Trecho {i+1} — Fonte: {source_name}]\n{doc.page_content}\n\n"
+
+    sources_list = ", ".join(f'"{s}"' for s in available_sources) if available_sources else "desconhecido"
 
     structured_llm = model.with_structured_output(FrameworkAnalysisResult)
     user_message = f"""
+    Documentos disponíveis (use EXATAMENTE estes nomes em source_document): {sources_list}
+
     Project Context:
     {query_summary}
 

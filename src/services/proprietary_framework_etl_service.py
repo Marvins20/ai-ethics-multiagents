@@ -49,13 +49,14 @@ def ingest_proprietary_framework(chunk_size: int = 1000, chunk_overlap: int = 20
     else:
         raise ValueError(f"Unsupported file format: {file_extension}. Only PDF and Word documents are supported.")
 
+    source_title = os.path.splitext(os.path.basename(PROPRIETARY_FRAMEWORK_DATA_DIR))[0].replace("_", " ")
     docs_unstructured = loader.load()
     logger.info("Loaded %d raw elements from document", len(docs_unstructured))
     structured_docs = []
     for doc in docs_unstructured:
-        doc.metadata['source'] = 'proprietary_framework.pdf'
+        doc.metadata['source'] = source_title
         doc.metadata['ingestion_date'] = datetime.now().strftime('%Y-%m-%d')
-        doc.metadata['data_owner'] = 'PL 2338/2023'
+        doc.metadata['data_owner'] = source_title
         structured_docs.append(doc)
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
