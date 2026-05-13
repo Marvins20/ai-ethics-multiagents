@@ -27,7 +27,7 @@ def get_ensembled_retriever(collection: Chroma,  score_threshold: float = 0.1):
             bm25_retriever = BM25Retriever.from_documents(documents)
             chroma_retriever = collection.as_retriever()
 
-            ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, chroma_retriever], weights=[0.5, 0.5])
+            ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, chroma_retriever], weights=[0.2, 0.8])
             return ensemble_retriever
         else:
              print("Warning: Collection is empty. Returning None for retriever.")
