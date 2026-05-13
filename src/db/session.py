@@ -2,10 +2,17 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from .base import Base
 from ..config import settings
 
+if "asyncpg" in settings.database_url:
+    _connect_args: dict = {"statement_cache_size": 0}
+elif "psycopg" in settings.database_url:
+    _connect_args = {"prepare_threshold": 0}
+else:
+    _connect_args = {}
+
 engine = create_async_engine(
     settings.database_url,
     echo=False,
-    connect_args={"statement_cache_size": 0},
+    connect_args=_connect_args,
 )
 
 AsyncSessionLocal = async_sessionmaker(
