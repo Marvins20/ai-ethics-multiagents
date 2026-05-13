@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field, field_validator
 
 class Risk(BaseModel):
     description: str = Field(description="Description of the risk")
-    severity: str = Field(description="Severity of the risk (Low, Medium, High)")
 
 
 class Action(BaseModel):
@@ -37,7 +36,7 @@ class RiskAssessment(BaseModel):
 
 
 class RiskAssessmentResult(BaseModel):
-    assessments: list[RiskAssessment] = Field(description="List of detailed risk assessments")
+    assessments: list[RiskAssessment] = Field(description="List of detailed risk assessments", default_factory=list)
 
 
 class IncidentAnalysis(BaseModel):
@@ -49,14 +48,15 @@ class IncidentAnalysis(BaseModel):
 
 
 class IncidentAnalysisResult(BaseModel):
-    analyses: list[IncidentAnalysis] = Field(description="List of incident analyses")
+    analyses: list[IncidentAnalysis] = Field(description="List of incident analyses", default_factory=list)
 
 
 class FrameworkCompliance(BaseModel):
     aspect: str = Field(description="The aspect of the project being evaluated against the framework")
-    framework_reference: str = Field(description="Reference to the specific part of the proprietary framework")
-    compliance_status: str = Field(description="Compliance status (Compliant, Non-Compliant, Needs Review)")
-    explanation: str = Field(description="Explanation of the compliance status based on framework details")
+    framework_reference: str = Field(description="Relevant excerpt or reference from the framework document")
+    compliance_status: str = Field(description="Importance level for the project based on the framework: Observação, Precaução, Mitigação, or Crítico")
+    explanation: str = Field(description="Explanation of what the framework says about this aspect and what the researcher should consider")
+    source_document: str | None = Field(description="Name or title of the source document the excerpt was taken from", default=None)
 
 
 class FrameworkAnalysisResult(BaseModel):
@@ -67,8 +67,8 @@ class FinalClassificationResult(BaseModel):
     project_name: str = Field(description="Name of the project")
     risk_level: str = Field(description="Overall risk level (Low, Medium, High, Critical)")
     executive_summary: str = Field(description="Executive summary of the AI ethics evaluation")
-    key_recommendations: list[str] = Field(description="List of key recommendations to mitigate risks")
-    identified_risks: list[str] = Field(description="List of all identified risks")
+    key_recommendations: list[str] = Field(description="List of key recommendations to mitigate risks", default_factory=list)
+    identified_risks: list[str] = Field(description="List of all identified risks", default_factory=list)
 
     @field_validator("identified_risks", "key_recommendations", mode="before")
     @classmethod
@@ -108,8 +108,8 @@ class QuestionnaireResult(BaseModel):
     @field_validator("items")
     @classmethod
     def validate_item_count(cls, v: list) -> list:
-        if not (5 <= len(v) <= 7):
-            raise ValueError(f"Questionnaire must have 5 to 7 items, got {len(v)}")
+        if len(v) > 7:
+            return v[:7]
         return v
 
 

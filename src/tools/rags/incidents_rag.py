@@ -69,5 +69,5 @@ def search_incidents(project_description: str, action: str, top_k: int = 5):
         action: The specific action being analyzed for risks.
         top_k: The number of top results to return from the search.
     """
-    query = f"Project context: {project_description}. Action: {action}. Find relevant AI incidents and failures."
+    query = "\n".join(filter(None, [project_description, action]))
     return get_incidents_rag().query(query, top_k)
