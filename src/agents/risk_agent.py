@@ -73,8 +73,7 @@ system_prompt = """Você é um Agente de Análise de Riscos ÉTICOS em IA com po
     """
 
 _MAX_ACTIONS = 10
-_MAX_RISKS_PER_ACTION = 2
-_MAX_DOCS_PER_RISK = 2
+_MAX_DOCS_PER_ACTION = 2
 _DESC_CHARS = 120
 
 def risk_agent_call(state: AgentState) -> AgentState:
@@ -85,33 +84,29 @@ def risk_agent_call(state: AgentState) -> AgentState:
 
     for action in actions:
         action_desc = action.get("description", "")
-        risks = action.get("risks", [])[:_MAX_RISKS_PER_ACTION]
+        if not action_desc:
+            continue
 
         search_results_summary += f"\nAction: {action_desc}\n"
 
-        for risk in risks:
-            risk_desc = risk.get("description", "")
+        try:
+            docs = search_risks.invoke({"query": action_desc, "top_k": _MAX_DOCS_PER_ACTION})
 
-            try:
-                docs = search_risks.invoke({"query": risk_desc, "top_k": _MAX_DOCS_PER_RISK})
+            if isinstance(docs, str):
+                search_results_summary += f"    - {docs}\n"
+            else:
+                for i, doc in enumerate(docs[:_MAX_DOCS_PER_ACTION]):
+                    m = doc.metadata
+                    search_results_summary += (
+                        f"    Match {i+1}: [{m.get('quick_ref','N/A')}] "
+                        f"Title: {m.get('title','N/A')} | "
+                        f"Ev_ID: {m.get('ev_id','N/A')} | "
+                        f"{m.get('risk_category','N/A')} / {m.get('risk_subcategory','N/A')} "
+                        f"({m.get('domain','N/A')}) — {doc.page_content[:_DESC_CHARS]}\n"
+                    )
 
-                search_results_summary += f"  Risk: {risk_desc}\n"
-
-                if isinstance(docs, str):
-                    search_results_summary += f"    - {docs}\n"
-                else:
-                    for i, doc in enumerate(docs[:_MAX_DOCS_PER_RISK]):
-                        m = doc.metadata
-                        search_results_summary += (
-                            f"    Match {i+1}: [{m.get('quick_ref','N/A')}] "
-                            f"Title: {m.get('title','N/A')} | "
-                            f"Ev_ID: {m.get('ev_id','N/A')} | "
-                            f"{m.get('risk_category','N/A')} / {m.get('risk_subcategory','N/A')} "
-                            f"({m.get('domain','N/A')}) — {doc.page_content[:_DESC_CHARS]}\n"
-                        )
-
-            except Exception as e:
-                search_results_summary += f"  Error: {e}\n"
+        except Exception as e:
+            search_results_summary += f"    - Error: {e}\n"
 
     
     structured_llm = model.with_structured_output(RiskAssessmentResult)
